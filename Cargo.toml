@@ -1,6 +1,5 @@
-[package]
-name = "little-assembler"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
+[workspace]
+resolver = "2"
+members = [
+    "assemblers",
+]
