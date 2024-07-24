@@ -7,3 +7,5 @@ repository = "https://git.nicolabelluti.me/little-emulator/little-assembler"
 documentation = "https://little-emulator.org"
 
 [dependencies]
+derive_builder = "0.20.0"
+thiserror = "1.0.63"
