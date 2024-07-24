@@ -1,4 +1,5 @@
 mod lexer;
+mod parser;
 
 use crate::ParseError;
 use logos::Logos;
@@ -31,8 +32,13 @@ impl crate::Assembler for Lc2Assembler {
         &self,
         assembly: &str,
     ) -> Result<(Vec<u8>, HashMap<String, Self::Address>), ParseError> {
-        let _lexer = lexer::Token::lexer(assembly);
+        // Lexer
+        let mut lexer = lexer::Token::lexer(assembly).peekable();
 
-        todo!()
+        // Parser
+        let symbol_table = parser::build_symbol_table(&mut lexer.clone())?;
+        let binary = parser::assemble(&mut lexer, &symbol_table)?;
+
+        Ok((binary, symbol_table))
     }
 }
