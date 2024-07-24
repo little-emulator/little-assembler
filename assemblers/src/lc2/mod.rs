@@ -1,4 +1,7 @@
+mod lexer;
+
 use crate::ParseError;
+use logos::Logos;
 use std::collections::HashMap;
 
 #[derive(Debug, derive_builder::Builder)]
@@ -26,8 +29,10 @@ impl crate::Assembler for Lc2Assembler {
 
     fn assemble(
         &self,
-        _assembly: &str,
+        assembly: &str,
     ) -> Result<(Vec<u8>, HashMap<String, Self::Address>), ParseError> {
-        todo!();
+        let _lexer = lexer::Token::lexer(assembly);
+
+        todo!()
     }
 }

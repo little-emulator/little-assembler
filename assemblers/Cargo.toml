@@ -7,5 +7,7 @@ repository = "https://git.nicolabelluti.me/little-emulator/little-assembler"
 documentation = "https://little-emulator.org"
 
 [dependencies]
+architectures = { git = "https://git.nicolabelluti.me/little-emulator/little-emulator.git" }
 derive_builder = "0.20.0"
+logos = "0.14.0"
 thiserror = "1.0.63"
