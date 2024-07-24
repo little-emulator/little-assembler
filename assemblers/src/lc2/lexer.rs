@@ -30,6 +30,7 @@ pub enum Token {
     String(String),
 
     #[regex(r"(?i)\.(ORIG|FILL|STRINGZ|BLKW|END)", |lex| PseudoOperation::try_from(lex.slice()).ok())]
+    #[regex(r"(?i)\.(STRINGZP)", |lex| PseudoOperation::try_from(lex.slice()).ok())]
     PseudoOperation(PseudoOperation),
 
     #[regex(r"(?i)ADD|AND|JSRR?|JMPR?|LD[IR]?|LEA|NOT|RET|RTI|ST[IR]?", |lex| Operation::try_from(lex.slice()).ok())]
@@ -148,6 +149,9 @@ pub enum PseudoOperation {
     Stringz,
     Blkw,
     End,
+
+    // Custom pseudo-op: Create a null-terminated packed string
+    Stringzp,
 }
 
 impl TryFrom<&str> for PseudoOperation {
@@ -160,6 +164,8 @@ impl TryFrom<&str> for PseudoOperation {
             ".STRINGZ" => Self::Stringz,
             ".BLKW" => Self::Blkw,
             ".END" => Self::End,
+
+            ".STRINGZP" => Self::Stringzp,
 
             _ => return Err(ParseError::NonValidToken),
         })
