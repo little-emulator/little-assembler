@@ -17,7 +17,7 @@ pub enum Token {
     #[regex(r"[rR][0-7]", parse_register)]
     Register(Gpr),
 
-    #[regex(r"[_a-zA-Z]+", |lex| lex.slice().to_owned())]
+    #[regex(r"[_a-zA-Z0-9]+", |lex| lex.slice().to_owned(), priority = 1)]
     Label(String),
 
     #[regex(r"(?i)(0?b|%)[01]+", |lex| parse_number(lex, 2))]

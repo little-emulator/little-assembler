@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 mod lexer;
 mod parser;
 
@@ -10,7 +13,7 @@ use std::collections::HashMap;
 #[allow(clippy::struct_excessive_bools)]
 pub struct Lc2Assembler {
     #[builder(default = "false")]
-    optional_orig: bool,
+    optional_starting_orig: bool,
 
     #[builder(default = "false")]
     multiple_origs: bool,

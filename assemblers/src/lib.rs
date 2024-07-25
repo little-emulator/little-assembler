@@ -24,8 +24,10 @@ pub enum ParseError {
     #[error("I was not expecting that token")]
     UnexpectedToken,
 
-    #[error("The assembly should start with an \".orig\" directive")]
+    #[error("The assembly should contain an \".orig\" directive")]
     NoOrig,
+    #[error("\".orig\" should be the first directive")]
+    OrigNotFirst,
     #[error("The \".orig\" directives should be in order")]
     OutOfOrderOrigs,
     #[error("There should be only an \".orig\" directive")]

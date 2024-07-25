@@ -15,7 +15,7 @@ use token_operations::{ParseResult, TokenOperations};
 ///
 /// Other than that, it validates the assembly, asserting that:
 ///   - The `.orig` pseudo-operation is the first directive (unless
-///     `options.optional_orig` is set to `true`);
+///     `options.optional_starting_orig` is set to `true`);
 ///   - There is only one `.orig` directive (unless `options.multiple_origs` is
 ///     set to `true`);
 ///   - If there are multiple `.orig` directives, they are in order;
@@ -37,7 +37,7 @@ pub fn build_symbol_table(
 
     // Get the start_address
     log::trace!("Getting the start address...");
-    let mut address = lexer.parse_start_address(options.optional_orig)?;
+    let mut address = lexer.parse_start_address(options.optional_starting_orig)?;
     log::debug!("Start address is {:#06x}!", address);
 
     // For every token...
@@ -150,13 +150,13 @@ pub fn assemble(
 ) -> ParseResult<Vec<u8>> {
     // Get the start_address
     log::trace!("Getting the start address...");
-    let mut address = lexer.parse_start_address(options.optional_orig)?;
+    let mut address = lexer.parse_start_address(options.optional_starting_orig)?;
     log::debug!("Start address is {:#06x}!", address);
 
     // Create a new binary and put the start address into it if
     // `options.prepend_start_address` is set
     let mut binary = Vec::new();
-    if options.prepend_start_address {
+    if !options.optional_starting_orig && options.prepend_start_address {
         log::debug!("Putting the start_address into the binary!");
         binary.push(address);
     }

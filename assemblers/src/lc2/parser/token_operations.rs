@@ -63,18 +63,41 @@ impl TokenOperations for Peekable<Lexer<'_, Token>> {
         Ok(())
     }
 
-    /// Get the start address from the first `.orig` directive. If 
+    /// Get the start address from the first `.orig` directive. If
     /// `orig_optional` is set and the first directive isn't an `.orig` return
     /// `0`
     fn parse_start_address(&mut self, orig_optional: bool) -> ParseResult<u16> {
-        Ok(match self.peek_next_token()? {
-            Token::PseudoOperation(PseudoOperation::Orig) => {
-                self.next_token()?;
-                self.parse_pseudo_operation(PseudoOperation::Orig)?[0]
+        loop {
+            match self.peek_next_token()? {
+                // Ignore comments
+                Token::Comment(_) => {
+                    self.next_token()?;
+                    continue;
+                }
+
+                // Get the address from the first `.orig` directive
+                Token::PseudoOperation(PseudoOperation::Orig) => {
+                    self.next_token()?;
+                    return Ok(self.parse_pseudo_operation(PseudoOperation::Orig)?[0]);
+                }
+
+                // If the first token after the comments isn't a `.orig`
+                // directive return an error, but if `orig_optional` is `true`
+                // then return 0
+                _ if orig_optional => return Ok(0),
+
+                // If there is at least one `.orig` directive in the assembly
+                // then return an `OrigNotFirst` error, else return a `NoOrig`
+                // error
+                _ => {
+                    if self.any(|x| x == Ok(Token::PseudoOperation(PseudoOperation::Orig))) {
+                        return Err(ParseError::OrigNotFirst);
+                    }
+
+                    return Err(ParseError::NoOrig);
+                }
             }
-            _ if orig_optional => 0,
-            _ => return Err(ParseError::NoOrig),
-        })
+        }
     }
 
     /// Consume a pseudo-operation, returning the binary representation
