@@ -57,6 +57,21 @@ fn comments_before_orig() {
 }
 
 #[test]
+fn comments_after_end() {
+    let assembler = Lc2AssemblerBuilder::default().build().unwrap();
+
+    let _ = assembler
+        .assemble(
+            r"
+            .orig 0x3000
+            .end
+            ; This is a comment
+            ",
+        )
+        .unwrap();
+}
+
+#[test]
 fn orig_not_first_error() {
     let assembler = Lc2AssemblerBuilder::default().build().unwrap();
 

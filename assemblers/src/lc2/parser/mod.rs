@@ -130,7 +130,10 @@ pub fn build_symbol_table(
 
     // If there was an `.end` directive but it was't the last token and the
     // `options.nothing_after_end` isn't set then return an error
-    if !options.optional_end && lexer.next().is_some() && options.nothing_after_end {
+    if !options.optional_end
+        && options.nothing_after_end
+        && lexer.any(|x| !matches!(x, Ok(Token::Comment(_))))
+    {
         return Err(ParseError::EndNotLast);
     }
 
