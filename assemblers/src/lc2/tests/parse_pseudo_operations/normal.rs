@@ -6,7 +6,6 @@ fn assemble(assembly: &str) -> Vec<u8> {
         .optional_end(true)
         .enable_stringzp(true)
         .build()
-        .unwrap()
         .assemble(assembly)
         .unwrap();
 

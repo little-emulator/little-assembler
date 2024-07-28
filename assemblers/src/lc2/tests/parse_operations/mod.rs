@@ -7,7 +7,6 @@ fn assemble_error(assembly: &str) -> ParseError {
         .optional_starting_orig(true)
         .optional_end(true)
         .build()
-        .unwrap()
         .assemble(assembly)
         .unwrap_err()
 }
@@ -17,7 +16,6 @@ fn assemble(assembly: &str) -> Vec<u8> {
         .optional_starting_orig(true)
         .optional_end(true)
         .build()
-        .unwrap()
         .assemble(assembly)
         .unwrap();
 

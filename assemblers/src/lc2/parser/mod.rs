@@ -29,6 +29,8 @@ use token_operations::{ParseResult, TokenOperations};
 ///   - The binary doesn't exceed the maximum size.
 ///
 /// The `assemble()` function assumes that those check are done
+///
+/// This function consumes the lexer
 pub fn build_symbol_table(
     options: &Lc2Assembler,
     lexer: &mut Peekable<Lexer<'_, Token>>,
@@ -147,6 +149,8 @@ pub fn build_symbol_table(
 ///
 /// It doesn't perform any kind of check except the essential ones, so the
 /// `build_symbol_table()` function needs to be run first
+///
+/// This function consumes the lexer
 pub fn assemble(
     options: &Lc2Assembler,
     lexer: &mut Peekable<Lexer<'_, Token>>,

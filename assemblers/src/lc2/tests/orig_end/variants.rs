@@ -4,8 +4,7 @@ use super::*;
 fn multiple_orig() {
     let assembler = Lc2AssemblerBuilder::default()
         .multiple_origs(true)
-        .build()
-        .unwrap();
+        .build();
 
     let (binary, symbol_table) = assembler
         .assemble(
@@ -29,8 +28,7 @@ fn multiple_orig() {
 fn no_orig() {
     let assembler = Lc2AssemblerBuilder::default()
         .optional_starting_orig(true)
-        .build()
-        .unwrap();
+        .build();
 
     let (binary, symbol_table) = assembler.assemble(".end").unwrap();
 
@@ -43,8 +41,7 @@ fn orig_not_first() {
     let assembler = Lc2AssemblerBuilder::default()
         .optional_starting_orig(true)
         .multiple_origs(true)
-        .build()
-        .unwrap();
+        .build();
 
     let (binary, symbol_table) = assembler
         .assemble(
@@ -69,8 +66,7 @@ fn orig_not_first() {
 fn no_end() {
     let assembler = Lc2AssemblerBuilder::default()
         .optional_end(true)
-        .build()
-        .unwrap();
+        .build();
 
     let (binary, symbol_table) = assembler.assemble(".orig 0x3000").unwrap();
 
@@ -82,8 +78,7 @@ fn no_end() {
 fn end_not_last() {
     let assembler = Lc2AssemblerBuilder::default()
         .nothing_after_end(false)
-        .build()
-        .unwrap();
+        .build();
 
     let (binary, symbol_table) = assembler
         .assemble(

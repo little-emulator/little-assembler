@@ -7,7 +7,6 @@ fn assemble(assembly: &str) -> Result<(Vec<u8>, HashMap<String, u16>), ParseErro
         .optional_end(true)
         .enable_stringzp(true)
         .build()
-        .unwrap()
         .assemble(assembly)
 }
 
@@ -56,8 +55,7 @@ fn stringzp_not_enabled() {
     let assembler = Lc2AssemblerBuilder::default()
         .optional_starting_orig(true)
         .optional_end(true)
-        .build()
-        .unwrap();
+        .build();
 
     assert_eq!(
         assembler.assemble(".stringzp \"Test\""),

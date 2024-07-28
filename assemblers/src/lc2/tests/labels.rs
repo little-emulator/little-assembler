@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn get_labels() {
-    let assembler = Lc2AssemblerBuilder::default().build().unwrap();
+    let assembler = Lc2AssemblerBuilder::default().build();
 
     let (binary, symbol_table) = assembler
         .assemble(
@@ -28,7 +28,7 @@ fn get_labels() {
 
 #[test]
 fn label_redeclaration() {
-    let assembler = Lc2AssemblerBuilder::default().build().unwrap();
+    let assembler = Lc2AssemblerBuilder::default().build();
 
     let error = assembler.assemble(
         r"

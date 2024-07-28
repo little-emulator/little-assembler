@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn normal() {
-    let assembler = Lc2AssemblerBuilder::default().build().unwrap();
+    let assembler = Lc2AssemblerBuilder::default().build();
 
     let (binary, symbol_table) = assembler
         .assemble(
@@ -19,7 +19,7 @@ fn normal() {
 
 #[test]
 fn multiple_orig_error() {
-    let assembler = Lc2AssemblerBuilder::default().build().unwrap();
+    let assembler = Lc2AssemblerBuilder::default().build();
 
     let error = assembler.assemble(
         r"
@@ -34,7 +34,7 @@ fn multiple_orig_error() {
 
 #[test]
 fn no_orig_error() {
-    let assembler = Lc2AssemblerBuilder::default().build().unwrap();
+    let assembler = Lc2AssemblerBuilder::default().build();
 
     let error = assembler.assemble(".end");
 
@@ -43,7 +43,7 @@ fn no_orig_error() {
 
 #[test]
 fn comments_before_orig() {
-    let assembler = Lc2AssemblerBuilder::default().build().unwrap();
+    let assembler = Lc2AssemblerBuilder::default().build();
 
     let _ = assembler
         .assemble(
@@ -58,7 +58,7 @@ fn comments_before_orig() {
 
 #[test]
 fn comments_after_end() {
-    let assembler = Lc2AssemblerBuilder::default().build().unwrap();
+    let assembler = Lc2AssemblerBuilder::default().build();
 
     let _ = assembler
         .assemble(
@@ -73,7 +73,7 @@ fn comments_after_end() {
 
 #[test]
 fn orig_not_first_error() {
-    let assembler = Lc2AssemblerBuilder::default().build().unwrap();
+    let assembler = Lc2AssemblerBuilder::default().build();
 
     let error = assembler.assemble(
         r"
@@ -88,7 +88,7 @@ fn orig_not_first_error() {
 
 #[test]
 fn no_end_error() {
-    let assembler = Lc2AssemblerBuilder::default().build().unwrap();
+    let assembler = Lc2AssemblerBuilder::default().build();
 
     let error = assembler.assemble(".orig 0x3000");
 
@@ -97,7 +97,7 @@ fn no_end_error() {
 
 #[test]
 fn end_not_last_error() {
-    let assembler = Lc2AssemblerBuilder::default().build().unwrap();
+    let assembler = Lc2AssemblerBuilder::default().build();
 
     let error = assembler.assemble(
         r"
