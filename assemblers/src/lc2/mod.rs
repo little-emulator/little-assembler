@@ -8,10 +8,10 @@ use crate::ParseError;
 use logos::Logos;
 use std::collections::HashMap;
 
-#[builder(build_fn(private, name = "fallible_build"))]
-#[derive(Debug, derive_builder::Builder)]
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::struct_excessive_bools)]
+#[derive(Debug, derive_builder::Builder)]
+#[builder(build_fn(private, name = "fallible_build"))]
 pub struct Lc2Assembler {
     #[builder(default = "false")]
     optional_starting_orig: bool,

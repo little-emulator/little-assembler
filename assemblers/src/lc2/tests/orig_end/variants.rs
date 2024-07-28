@@ -2,9 +2,7 @@ use super::*;
 
 #[test]
 fn multiple_orig() {
-    let assembler = Lc2AssemblerBuilder::default()
-        .multiple_origs(true)
-        .build();
+    let assembler = Lc2AssemblerBuilder::default().multiple_origs(true).build();
 
     let (binary, symbol_table) = assembler
         .assemble(
@@ -64,9 +62,7 @@ fn orig_not_first() {
 
 #[test]
 fn no_end() {
-    let assembler = Lc2AssemblerBuilder::default()
-        .optional_end(true)
-        .build();
+    let assembler = Lc2AssemblerBuilder::default().optional_end(true).build();
 
     let (binary, symbol_table) = assembler.assemble(".orig 0x3000").unwrap();
 
