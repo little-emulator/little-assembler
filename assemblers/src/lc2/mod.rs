@@ -34,10 +34,16 @@ pub struct Lc2Assembler {
 
 // https://github.com/colin-kiegel/rust-derive-builder/issues/56#issuecomment-1043671602
 impl Lc2AssemblerBuilder {
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// # Panics
     ///
     /// This method panics if if any fields have been added to `Lc2Assembler`
     /// that lack defaults
+    #[must_use]
     pub fn build(&mut self) -> Lc2Assembler {
         self.fallible_build()
             .expect("All required fields set at initialization")
@@ -52,13 +58,13 @@ impl crate::Assembler for Lc2Assembler {
         assembly: &str,
     ) -> Result<(Vec<u8>, HashMap<String, Self::Address>), ParseError> {
         // Lexer
-        log::info!("Tokenizing the assembly...");
+        log::info!(target: "lc2_assembler", "Tokenizing the assembly...");
         let mut lexer = lexer::Token::lexer(assembly).peekable();
 
         // Parser
-        log::info!("Creating the symbol table...");
+        log::info!(target: "lc2_assembler", "Creating the symbol table...");
         let symbol_table = parser::build_symbol_table(self, &mut lexer.clone())?;
-        log::info!("Assembling the binary...");
+        log::info!(target: "lc2_assembler", "Assembling the binary...");
         let binary = parser::assemble(self, &mut lexer, &symbol_table)?;
 
         Ok((binary, symbol_table))

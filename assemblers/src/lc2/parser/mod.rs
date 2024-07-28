@@ -39,15 +39,15 @@ pub fn build_symbol_table(
     let mut symbol_table = HashMap::new();
 
     // Get the start_address
-    log::trace!("Getting the start address...");
+    log::trace!(target: "lc2_assembler", "Getting the start address...");
     let mut address = lexer.parse_start_address(options.optional_starting_orig)?;
-    log::debug!("Start address is {:#06x}!", address);
+    log::debug!(target: "lc2_assembler", "Start address is {:#06x}!", address);
 
     // For every token...
     let mut end = false;
     while let Some(token) = lexer.next() {
         let token = token.map_err(|()| ParseError::NonValidToken)?;
-        log::debug!("Got a new token: {:?}!", token);
+        log::trace!(target: "lc2_assembler", "Got a new token: {:?}!", token);
 
         // Get the lenght of the instruction
         let instruction_lenght: u16 = match token {
@@ -56,7 +56,7 @@ pub fn build_symbol_table(
 
             // Add the labels declaration into the symbol table
             Token::Label(label) => {
-                log::info!(
+                log::debug!(target: "lc2_assembler",
                     "Adding the label \"{}\" at address {:#06x} to the symbol table...",
                     label,
                     address
@@ -111,7 +111,7 @@ pub fn build_symbol_table(
             _ => return Err(ParseError::UnexpectedToken),
         };
 
-        log::trace!(
+        log::trace!(target: "lc2_assembler",
             "Incrementing the addess by {} cell{}...",
             instruction_lenght,
             if instruction_lenght == 1 { "" } else { "s" }
@@ -122,7 +122,7 @@ pub fn build_symbol_table(
             .checked_add(instruction_lenght)
             .ok_or(ParseError::BinaryTooBig)?;
 
-        log::trace!("The new address is {:#06x}!", address);
+        log::trace!(target: "lc2_assembler", "The new address is {:#06x}!", address);
     }
 
     // If there wasn't any `.end` directive and the `options.optional_end` isn't
@@ -157,22 +157,22 @@ pub fn assemble(
     symbol_table: &HashMap<String, u16>,
 ) -> ParseResult<Vec<u8>> {
     // Get the start_address
-    log::trace!("Getting the start address...");
+    log::trace!(target: "lc2_assembler", "Getting the start address...");
     let mut address = lexer.parse_start_address(options.optional_starting_orig)?;
-    log::debug!("Start address is {:#06x}!", address);
+    log::trace!(target: "lc2_assembler", "Start address is {:#06x}!", address);
 
     // Create a new binary and put the start address into it if
     // `options.prepend_start_address` is set
     let mut binary = Vec::new();
     if !options.optional_starting_orig && options.prepend_start_address {
-        log::debug!("Putting the start_address into the binary!");
+        log::debug!(target: "lc2_assembler", "Putting the start address ({:#x}) into the binary!", address);
         binary.push(address);
     }
 
     // For every token...
     while let Some(token) = lexer.next() {
         let token = token.map_err(|()| ParseError::NonValidToken)?;
-        log::debug!("Got a new token: {:?}!", token);
+        log::trace!(target: "lc2_assembler", "Got a new token: {:?}!", token);
 
         // Get the binary representation of the instruction
         let instruction: Vec<u16> = match token {
@@ -184,24 +184,31 @@ pub fn assemble(
             }
 
             // Parse operations
-            Token::Operation(x) => lexer.parse_operation(x, Some((symbol_table, address)))?,
+            Token::Operation(x) => {
+                log::debug!(target: "lc2_assembler", "Got a new operation: {:02x?}!", x);
+                lexer.parse_operation(x, Some((symbol_table, address)))?
+            }
 
             // If there is a new `.orig` directive, add new empty cells until
             // the new address is reached
-            Token::PseudoOperation(PseudoOperation::Orig) => {
-                let new_address = lexer.parse_pseudo_operation(PseudoOperation::Orig)?[0];
+            Token::PseudoOperation(x @ PseudoOperation::Orig) => {
+                log::debug!(target: "lc2_assembler", "Got a new pseudo-operation: {:?}!", x);
+                let new_address = lexer.parse_pseudo_operation(x)?[0];
                 vec![0; usize::from(new_address - address)]
             }
 
             // Parse pseudo-operations. Exit the loop if it encounters a `.end`
             // directive
             Token::PseudoOperation(PseudoOperation::End) => break,
-            Token::PseudoOperation(x) => lexer.parse_pseudo_operation(x)?,
+            Token::PseudoOperation(x) => {
+                log::debug!(target: "lc2_assembler", "Got a new pseudo-operation: {:?}!", x);
+                lexer.parse_pseudo_operation(x)?
+            }
 
             _ => return Err(ParseError::UnexpectedToken),
         };
 
-        log::trace!(
+        log::trace!(target: "lc2_assembler",
             "Incrementing the binary by {} cell{}...",
             instruction.len(),
             if instruction.len() == 1 { "" } else { "s" }
@@ -211,7 +218,7 @@ pub fn assemble(
         address += u16::try_from(instruction.len()).map_err(|_| ParseError::BinaryTooBig)?;
         binary.extend(instruction);
 
-        log::trace!("The new binary is {} bytes long!", binary.len() * 2);
+        log::trace!(target: "lc2_assembler", "The new binary is {} bytes long!", binary.len() * 2);
     }
 
     // Convert the vector of words into a vector of bytes and return it
