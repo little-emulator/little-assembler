@@ -21,7 +21,7 @@ pub enum Token {
     Label(String),
 
     #[regex(r"(?i)(0?b|%)[01]+", |lex| parse_number(lex, 2))]
-    #[regex(r"#?\d+", |lex| parse_number(lex, 10))]
+    #[regex(r"#?-?\d+", |lex| parse_number(lex, 10))]
     #[regex(r"(?i)(0?x|\$)[a-f0-9]+", |lex| parse_number(lex, 16))]
     Number(u16),
 
@@ -72,11 +72,35 @@ fn parse_number(lex: &Lexer<Token>, base: u32) -> Option<u16> {
         _ => return None,
     };
 
-    // Remove the prefixes
-    let str = lex.slice().to_lowercase().replace(prefixes, "");
+    // Remove the prefixes and the initial zeroes
+    let mut string = lex
+        .slice()
+        .to_lowercase()
+        .replace(prefixes, "")
+        .trim_start_matches('0')
+        .to_string();
+
+    // make sure the string is not empty
+    if string.is_empty() {
+        string.push('0');
+    }
+
+    // Check if the number is negative
+    let mut negative = true;
+    let string = string.strip_prefix('-').unwrap_or_else(|| {
+        negative = false;
+        &string
+    });
 
     // Convert the string into a u16
-    u16::from_str_radix(&str, base).ok()
+    let mut num = u16::from_str_radix(string, base).ok()?;
+
+    // If the number is negative do the two's complement
+    if negative {
+        num = (!num).wrapping_add(1);
+    }
+
+    Some(num)
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

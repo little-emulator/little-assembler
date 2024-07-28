@@ -1,7 +1,7 @@
-use super::{Operation, PseudoOperation, Token};
+use super::{token_helpers::TokenHelpers, Operation, PseudoOperation, Token};
 use crate::ParseError;
 use logos::Lexer;
-use std::{collections::HashMap, iter::Peekable};
+use std::collections::HashMap;
 
 pub type ParseResult<T> = std::result::Result<T, ParseError>;
 
@@ -9,9 +9,6 @@ pub trait TokenOperations {
     type Address;
     type Data;
 
-    fn peek_next_token(&mut self) -> ParseResult<&Token>;
-    fn next_token(&mut self) -> ParseResult<Token>;
-    fn next_token_skip(&mut self, skip: Token) -> ParseResult<Token>;
     fn skip_token(&mut self, skip: Token) -> ParseResult<()>;
     fn parse_start_address(&mut self, orig_optional: bool) -> ParseResult<u16>;
     fn parse_pseudo_operation(
@@ -25,35 +22,9 @@ pub trait TokenOperations {
     ) -> ParseResult<Vec<Self::Data>>;
 }
 
-impl TokenOperations for Peekable<Lexer<'_, Token>> {
+impl TokenOperations for std::iter::Peekable<Lexer<'_, Token>> {
     type Address = u16;
     type Data = u16;
-
-    /// Return a reference to the next token without consuming it
-    fn peek_next_token(&mut self) -> ParseResult<&Token> {
-        match self.peek() {
-            Some(Ok(token)) => Ok(token),
-            Some(Err(_error)) => Err(ParseError::NonValidToken),
-            None => Err(ParseError::NoMoreTokens),
-        }
-    }
-
-    /// Return a the next token
-    fn next_token(&mut self) -> ParseResult<Token> {
-        match self.next() {
-            Some(Ok(token)) => Ok(token),
-            Some(Err(_error)) => Err(ParseError::NonValidToken),
-            None => Err(ParseError::NoMoreTokens),
-        }
-    }
-
-    /// Return a the next token, skipping the `skip` Token if it's found
-    fn next_token_skip(&mut self, skip: Token) -> ParseResult<Token> {
-        match self.next_token() {
-            Ok(token) if token == skip => self.next_token(),
-            x => x,
-        }
-    }
 
     /// Skips the `skip` Token if it's found
     fn skip_token(&mut self, skip: Token) -> ParseResult<()> {
@@ -67,6 +38,7 @@ impl TokenOperations for Peekable<Lexer<'_, Token>> {
     /// `orig_optional` is set and the first directive isn't an `.orig` return
     /// `0`
     fn parse_start_address(&mut self, orig_optional: bool) -> ParseResult<u16> {
+        // Loop to ignore start comments
         loop {
             match self.peek_next_token()? {
                 // Ignore comments
@@ -105,7 +77,7 @@ impl TokenOperations for Peekable<Lexer<'_, Token>> {
         &mut self,
         pseudo_operation: PseudoOperation,
     ) -> ParseResult<Vec<Self::Data>> {
-        match pseudo_operation {
+        Ok(match pseudo_operation {
             // For the `.orig` and the `.fill` directives return the number
             // immediatly after them
             PseudoOperation::Orig | PseudoOperation::Fill => {
@@ -113,7 +85,7 @@ impl TokenOperations for Peekable<Lexer<'_, Token>> {
                     return Err(ParseError::UnexpectedToken);
                 };
 
-                Ok(vec![start])
+                vec![start]
             }
 
             // For the `.stringz` directive returns the next string followed by
@@ -124,7 +96,7 @@ impl TokenOperations for Peekable<Lexer<'_, Token>> {
                 };
 
                 string.push('\0');
-                Ok(string.bytes().map(u16::from).collect())
+                string.bytes().map(u16::from).collect()
             }
 
             // For the `.blkw` directive returns a the second number repeated
@@ -140,11 +112,11 @@ impl TokenOperations for Peekable<Lexer<'_, Token>> {
                     return Err(ParseError::UnexpectedToken);
                 };
 
-                Ok(vec![word; usize::from(times)])
+                vec![word; usize::from(times)]
             }
 
             // The `.end` directive doesn't have a binary representation
-            PseudoOperation::End => Ok(Vec::new()),
+            PseudoOperation::End => Vec::new(),
 
             // For the `.stringzp` custom directive returns the next string
             // followed by a null byte in a packed form.
@@ -158,7 +130,7 @@ impl TokenOperations for Peekable<Lexer<'_, Token>> {
                 };
 
                 string.push('\0');
-                Ok(string
+                string
                     .into_bytes()
                     .chunks(2)
                     .map(|bytes| {
@@ -173,17 +145,144 @@ impl TokenOperations for Peekable<Lexer<'_, Token>> {
                         // Return the packed characters
                         data
                     })
-                    .collect())
+                    .collect()
             }
-        }
+        })
     }
 
     /// Consume an operation, returning the binary representation
     fn parse_operation(
         &mut self,
-        _operation: Operation,
-        _symbol_table: Option<(&HashMap<String, u16>, Self::Address)>,
+        operation: Operation,
+        symbol_table: Option<(&HashMap<String, u16>, Self::Address)>,
     ) -> ParseResult<Vec<Self::Data>> {
-        todo!()
+        Ok(match operation {
+            Operation::Add | Operation::And => {
+                // Get the opcode
+                let opcode = if operation == Operation::And {
+                    0b0101
+                } else {
+                    0b0001
+                };
+
+                let dest = self.get_register()?;
+                let src1 = self.get_register_skip_comma()?;
+
+                // Get the next register or a signed 5 bit number
+                let src2 = match self.next_token_skip(Token::Comma)? {
+                    // If the next token is a register than return it
+                    Token::Register(x) => u16::from(u8::from(x) & 0b111),
+
+                    // If the next token is a number...
+                    Token::Number(number) => {
+                        // Return an error if the number is bigger than 4 bits
+                        // (sign excluded)
+                        if number & 0xfff0 != 0 && number & 0xfff0 != 0xfff0 {
+                            return Err(ParseError::NumberLiteralTooBig);
+                        }
+
+                        // Return the first 5 bits of the number with a 1
+                        // before, to indicate that it's an immediate value
+                        number & 0b11111 | 0b10_0000
+                    }
+
+                    _ => return Err(ParseError::UnexpectedToken),
+                };
+
+                vec![(opcode << 12) | (dest << 9) | (src1 << 6) | src2]
+            }
+
+            Operation::Branch(n, z, p) => {
+                vec![
+                    (u16::from(n) << 11)
+                        | (u16::from(z) << 10)
+                        | (u16::from(p) << 9)
+                        | self.get_pgoffset9(symbol_table, false)?,
+                ]
+            }
+
+            Operation::Jump(link) => {
+                vec![
+                    (0b0100 << 12)
+                        | (u16::from(link) << 11)
+                        | self.get_pgoffset9(symbol_table, false)?,
+                ]
+            }
+
+            Operation::JumpRegister(link) => {
+                vec![
+                    (0b1100 << 12)
+                        | (u16::from(link) << 11)
+                        | (self.get_register()? << 6)
+                        | self.get_index6()?,
+                ]
+            }
+
+            Operation::Load
+            | Operation::LoadIndirect
+            | Operation::LoadEffectiveAddress
+            | Operation::Store
+            | Operation::StoreIndirect => {
+                // Get the opcode
+                let opcode = match operation {
+                    Operation::Load => 0b0010,
+                    Operation::LoadIndirect => 0b1010,
+                    Operation::LoadEffectiveAddress => 0b1110,
+                    Operation::Store => 0b0011,
+                    Operation::StoreIndirect => 0b1011,
+                    _ => unreachable!(),
+                };
+
+                vec![
+                    (opcode << 12)
+                        | (self.get_register()? << 9)
+                        | self.get_pgoffset9(symbol_table, true)?,
+                ]
+            }
+
+            Operation::LoadRegister | Operation::StoreRegister => {
+                // Get the opcode
+                let opcode = if operation == Operation::LoadRegister {
+                    0b0110
+                } else {
+                    0b0111
+                };
+
+                vec![
+                    (opcode << 12)
+                        | (self.get_register()? << 9)
+                        | (self.get_register_skip_comma()? << 6)
+                        | self.get_index6()?,
+                ]
+            }
+
+            Operation::Not => {
+                vec![
+                    (0b1001 << 12)
+                        | (self.get_register()? << 9)
+                        | (self.get_register_skip_comma()? << 6)
+                        | 0b11_1111,
+                ]
+            }
+
+            Operation::Return => vec![0b1101_000000000000],
+            Operation::ReturnInterrupt => vec![0b1000_000000000000],
+
+            Operation::Trap(index) => {
+                // If the index is set, use it, else get the next 8 bit number
+                let index: u8 = match index {
+                    Some(x) => x,
+                    None => match self.next_token()? {
+                        Token::Number(x) => {
+                            u8::try_from(x).map_err(|_| ParseError::NumberLiteralTooBig)?
+                        }
+
+                        _ => return Err(ParseError::UnexpectedToken),
+                    },
+                };
+
+                vec![(0b1111 << 12) | u16::from(index)]
+            }
+        })
     }
 }

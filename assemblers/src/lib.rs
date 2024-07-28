@@ -40,10 +40,15 @@ pub enum ParseError {
 
     #[error("The binary size exceeds the 65536 word limit")]
     BinaryTooBig,
-
     #[error("The number literal is too big")]
     NumberLiteralTooBig,
+    #[error("The number literal must be positive")]
+    NumberLiteralIsNegative,
 
     #[error("The label was declarated more than once")]
     LabelRedeclaration,
+    #[error("The label was used but not declared")]
+    LabelNotDeclared,
+    #[error("The label was found but is not on the same memory page")]
+    LabelNotOnSamePage,
 }
