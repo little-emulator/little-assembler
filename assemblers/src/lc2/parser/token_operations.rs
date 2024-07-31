@@ -107,9 +107,38 @@ impl TokenOperations for std::iter::Peekable<Lexer<'_, Token>> {
                     return Err(ParseError::UnexpectedToken);
                 };
 
-                // Get the word to repeat, skipping the comma if there is one
-                let Token::Number(word) = self.next_token_skip(Token::Comma)? else {
-                    return Err(ParseError::UnexpectedToken);
+                // Get the word to repeat...
+                let word = match self.peek_next_token() {
+                    // If the next token is a number, consume it and get it as
+                    // the word to repeat
+                    Ok(Token::Number(word)) => {
+                        // Get the number
+                        let word = *word;
+
+                        // Consume it
+                        self.next_token()?;
+
+                        // Return it
+                        word
+                    }
+
+                    // If the next token is a comma followed by a number, get it
+                    // as the word to repeat
+                    Ok(Token::Comma) => {
+                        // Consume the comma
+                        self.next_token()?;
+
+                        // Get the next number
+                        let Token::Number(word) = self.next_token()? else {
+                            return Err(ParseError::UnexpectedToken);
+                        };
+
+                        // Return it
+                        word
+                    }
+
+                    // Else fill the words with a null word
+                    _ => 0,
                 };
 
                 vec![word; usize::from(times)]

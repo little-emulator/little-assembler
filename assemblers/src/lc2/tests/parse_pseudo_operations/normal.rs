@@ -34,6 +34,18 @@ fn blkw() {
             .flat_map(|x| x.to_be_bytes())
             .collect::<Vec<_>>()
     );
+
+    // Without comma
+    assert_eq!(
+        assemble(".blkw 10 0xabcd"),
+        [0xabcd_u16; 10]
+            .iter()
+            .flat_map(|x| x.to_be_bytes())
+            .collect::<Vec<_>>()
+    );
+
+    // Without second argument
+    assert_eq!(assemble(".blkw 10"), [0; 20]);
 }
 
 #[test]
